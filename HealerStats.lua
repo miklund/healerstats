@@ -287,12 +287,6 @@ local function GroupUnits()
     return units
 end
 
-local function GroupUnitForGUID(guid)
-    for _, u in ipairs(GroupUnits()) do
-        if UnitExists(u) and UnitGUID(u) == guid then return u end
-    end
-end
-
 local function CheckWipe()
     if not InDungeon() then return end
     local anyAlive = false
@@ -311,15 +305,28 @@ local function CheckWipe()
     end
 end
 
-local function OnCombatLog()
-    local _, sub, _, _, _, _, _, destGUID = CombatLogGetCurrentEventInfo()
-    if sub ~= "UNIT_DIED" or not InDungeon() or not destGUID:find("^Player") then return end
-    local unit = GroupUnitForGUID(destGUID)
-    if unit and not UnitIsFeignDeath(unit) then
-        pending.deaths = pending.deaths + 1
-        RefreshUI()
-        C_Timer.After(0.5, CheckWipe)
+-- COMBAT_LOG_EVENT_UNFILTERED is forbidden to addons on modern clients, so poll group state.
+local deadState = {}
+
+local function PollDeaths()
+    if not InDungeon() then
+        if next(deadState) then wipe(deadState) end
+        return
     end
+    for _, u in ipairs(GroupUnits()) do
+        if UnitExists(u) then
+            local guid = UnitGUID(u)
+            local dead = UnitIsDeadOrGhost(u) and not UnitIsFeignDeath(u)
+            if guid then
+                if dead and not deadState[guid] then
+                    pending.deaths = pending.deaths + 1
+                    RefreshUI()
+                end
+                deadState[guid] = dead
+            end
+        end
+    end
+    CheckWipe()
 end
 
 ---------------------------------------------------------------------------
@@ -355,7 +362,7 @@ frame:SetScript("OnEvent", function(_, event, arg1)
         InitDB()
         for e in pairs(chatChannels) do frame:RegisterEvent(e) end
         frame:RegisterEvent("PLAYER_ENTERING_WORLD")
-        frame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+        C_Timer.NewTicker(1, PollDeaths)
         frame:RegisterEvent("PLAYER_ALIVE")
         frame:RegisterEvent("PLAYER_UNGHOST")
         frame:RegisterEvent("PLAYER_DEAD")
@@ -365,8 +372,6 @@ frame:SetScript("OnEvent", function(_, event, arg1)
         if arg1 and arg1:lower() == ADDON:lower() then Print("Blocked action: " .. tostring(arg2)) end
     elseif event == "PLAYER_ENTERING_WORLD" then
         OnEnterWorld()
-    elseif event == "COMBAT_LOG_EVENT_UNFILTERED" then
-        OnCombatLog()
     elseif event == "PLAYER_ALIVE" or event == "PLAYER_UNGHOST" or event == "PLAYER_DEAD" then
         C_Timer.After(0.5, CheckWipe)
     elseif chatChannels[event] then
