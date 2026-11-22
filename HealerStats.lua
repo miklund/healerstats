@@ -67,6 +67,7 @@ end
 local function GroupChannel()
     if IsInRaid() then return "RAID" end
     if IsInGroup() then return "PARTY" end
+    if IsInGuild() then return "GUILD" end
 end
 
 ---------------------------------------------------------------------------
@@ -352,7 +353,15 @@ end
 ---------------------------------------------------------------------------
 SLASH_HEALERSTATS1 = "/healerstats"
 SlashCmdList["HEALERSTATS"] = function(input)
-    if (input or ""):lower():match("^%s*stats") then PrintSummary() else ToggleUI() end
+    local arg = (input or ""):lower():match("^%s*(%S*)")
+    if arg == "stats" then
+        PrintSummary()
+    elseif arg == "post" then
+        local ch = GroupChannel()
+        if ch then SendSummary(ch) else PrintSummary() end
+    else
+        ToggleUI()
+    end
 end
 
 local frame = CreateFrame("Frame")
