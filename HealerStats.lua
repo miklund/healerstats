@@ -25,6 +25,7 @@ local function DungeonList()
     for _, n in ipairs(db.extraDungeons) do
         if not seen[n] then list[#list + 1] = n; seen[n] = true end
     end
+    table.sort(list)
     return list
 end
 
@@ -172,10 +173,10 @@ local function BuildUI_()
     label:SetText("Dungeon")
     -- Custom dropdown: UIDropDownMenuTemplate taints Blizzard's shared menu code.
     local dd = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    dd:SetSize(220, 24)
-    dd:SetPoint("TOPLEFT", 70, -34)
+    dd:SetSize(200, 24)
+    dd:SetPoint("TOPLEFT", 86, -34)
     local list = CreateFrame("Frame", nil, f, "BackdropTemplate")
-    list:SetSize(220, 150)
+    list:SetSize(200, 150)
     list:SetPoint("TOPLEFT", dd, "BOTTOMLEFT", 0, 0)
     list:SetFrameStrata("DIALOG")
     list:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
@@ -186,7 +187,7 @@ local function BuildUI_()
     sf:SetPoint("TOPLEFT", 4, -4)
     sf:SetPoint("BOTTOMRIGHT", -26, 4)
     local content = CreateFrame("Frame", nil, sf)
-    content:SetSize(190, 1)
+    content:SetSize(170, 1)
     sf:SetScrollChild(content)
     local rows = {}
     local function Populate()
@@ -195,7 +196,7 @@ local function BuildUI_()
             local row = rows[i]
             if not row then
                 row = CreateFrame("Button", nil, content)
-                row:SetSize(190, 20)
+                row:SetSize(170, 20)
                 row:SetPoint("TOPLEFT", 0, -(i - 1) * 20)
                 row:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
                 row.text = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
