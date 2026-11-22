@@ -16,7 +16,7 @@ HealerStats tracks every dungeon run you heal: whether it was completed, how man
 
 - `/healerstats` opens or closes the run window.
 - `/healerstats stats` prints your summary to chat.
-- Typing `healerstats` in party, raid, guild or say chat makes the addon reply with your summary (10 second cooldown).
+- Typing `healerstats` in party, raid or guild chat makes the addon reply with your summary (10 second cooldown).
 
 ## Installation
 
