@@ -328,7 +328,7 @@ end
 local chatChannels = {
     CHAT_MSG_PARTY = "PARTY", CHAT_MSG_PARTY_LEADER = "PARTY",
     CHAT_MSG_RAID = "RAID", CHAT_MSG_RAID_LEADER = "RAID",
-    CHAT_MSG_GUILD = "GUILD", CHAT_MSG_SAY = "SAY",
+    CHAT_MSG_GUILD = "GUILD"
 }
 
 local function OnChat(event, msg)
@@ -359,6 +359,10 @@ frame:SetScript("OnEvent", function(_, event, arg1)
         frame:RegisterEvent("PLAYER_ALIVE")
         frame:RegisterEvent("PLAYER_UNGHOST")
         frame:RegisterEvent("PLAYER_DEAD")
+        frame:RegisterEvent("ADDON_ACTION_BLOCKED")
+        frame:RegisterEvent("ADDON_ACTION_FORBIDDEN")
+    elseif event == "ADDON_ACTION_BLOCKED" or event == "ADDON_ACTION_FORBIDDEN" then
+        if arg1 and arg1:lower() == ADDON:lower() then Print("Blocked action: " .. tostring(arg2)) end
     elseif event == "PLAYER_ENTERING_WORLD" then
         OnEnterWorld()
     elseif event == "COMBAT_LOG_EVENT_UNFILTERED" then
