@@ -1,9 +1,9 @@
 ## Interface: 16001
-## Title: HealerRuns
+## Title: HealerStats
 ## Notes: Track healer dungeon runs, deaths and wipes, and share success statistics. Open with /healerstats.
 ## Author: miklund
 ## Version: 0.2.0
-## SavedVariables: HealerRunsDB
+## SavedVariables: HealerStatsDB
 
 Dungeons.lua
-HealerRuns.lua
+HealerStats.lua

@@ -1,4 +1,4 @@
-local ADDON = "HealerRuns"
+local ADDON = "HealerStats"
 local CHAT_COOLDOWN = 10
 
 local db, pending
@@ -7,12 +7,12 @@ local wipeActive = false
 local lastReply = 0
 
 local function Print(msg)
-    print("|cff33ff99HealerRuns|r: " .. msg)
+    print("|cff33ff99HealerStats|r: " .. msg)
 end
 
 local function InitDB()
-    HealerRunsDB = HealerRunsDB or {}
-    db = HealerRunsDB
+    HealerStatsDB = HealerStatsDB or {}
+    db = HealerStatsDB
     db.runs = db.runs or {}
     db.extraDungeons = db.extraDungeons or {}
     db.pending = db.pending or { dungeon = nil, completed = false, wipes = 0, deaths = 0 }
@@ -21,7 +21,7 @@ end
 
 local function DungeonList()
     local list, seen = {}, {}
-    for _, n in ipairs(HealerRunsDungeons) do list[#list + 1] = n; seen[n] = true end
+    for _, n in ipairs(HealerStatsDungeons) do list[#list + 1] = n; seen[n] = true end
     for _, n in ipairs(db.extraDungeons) do
         if not seen[n] then list[#list + 1] = n; seen[n] = true end
     end
@@ -104,7 +104,7 @@ end
 
 local function ShowCopyBox()
     if not ui.copy then
-        local f = CreateFrame("Frame", "HealerRunsCopyFrame", UIParent, "BasicFrameTemplateWithInset")
+        local f = CreateFrame("Frame", "HealerStatsCopyFrame", UIParent, "BasicFrameTemplateWithInset")
         f:SetSize(360, 120)
         f:SetPoint("CENTER")
         f:SetFrameStrata("DIALOG")
@@ -156,7 +156,7 @@ local function Button(parent, text, w, point, x, y, onClick)
 end
 
 local function BuildUI()
-    local f = CreateFrame("Frame", "HealerRunsFrame", UIParent, "BasicFrameTemplateWithInset")
+    local f = CreateFrame("Frame", "HealerStatsFrame", UIParent, "BasicFrameTemplateWithInset")
     f:SetSize(300, 250)
     f:SetPoint("CENTER")
     f:SetMovable(true)
@@ -165,13 +165,13 @@ local function BuildUI()
     f:SetScript("OnDragStart", f.StartMoving)
     f:SetScript("OnDragStop", f.StopMovingOrSizing)
     f.TitleText:SetText("Healer Stats")
-    tinsert(UISpecialFrames, "HealerRunsFrame")
+    tinsert(UISpecialFrames, "HealerStatsFrame")
     ui.frame = f
 
     local label = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     label:SetPoint("TOPLEFT", 20, -38)
     label:SetText("Dungeon")
-    local dd = CreateFrame("Frame", "HealerRunsDropdown", f, "UIDropDownMenuTemplate")
+    local dd = CreateFrame("Frame", "HealerStatsDropdown", f, "UIDropDownMenuTemplate")
     dd:SetPoint("TOPLEFT", 60, -52)
     UIDropDownMenu_SetWidth(dd, 190)
     UIDropDownMenu_Initialize(dd, function()

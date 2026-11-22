@@ -1,6 +1,6 @@
 -- Names must match the English instance name returned by GetInstanceInfo().
 -- Instances not listed here are added automatically when you enter them.
-HealerRunsDungeons = {
+HealerStatsDungeons = {
     "Ragefire Chasm",
     "The Deadmines",
     "Wailing Caverns",
@@ -20,4 +20,12 @@ HealerRunsDungeons = {
     "Dire Maul",
     "Stratholme",
     "Scholomance",
+    "Alcaz Prison",
+    "Blackmaw Hold",
+    "City of Dalaran",
+    "Krol'dok Stronghold",
+    "Ruins of Lordaeron",
+    "Shaper's Terrace",
+    "The Drowned City",
+    "The Hall of Thanes",
 }
