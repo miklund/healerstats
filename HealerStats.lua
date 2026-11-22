@@ -155,8 +155,8 @@ local function Button(parent, text, w, point, x, y, onClick)
     return b
 end
 
-local function BuildUI()
-    local f = CreateFrame("Frame", "HealerStatsFrame", UIParent, "BasicFrameTemplateWithInset")
+local function BuildUI_()
+    local f = HealerStatsFrame or CreateFrame("Frame", "HealerStatsFrame", UIParent, "BasicFrameTemplateWithInset")
     f:SetSize(300, 250)
     f:SetPoint("CENTER")
     f:SetMovable(true)
@@ -166,7 +166,6 @@ local function BuildUI()
     f:SetScript("OnDragStop", f.StopMovingOrSizing)
     f.TitleText:SetText("Healer Stats")
     tinsert(UISpecialFrames, "HealerStatsFrame")
-    ui.frame = f
 
     local label = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     label:SetPoint("TOPLEFT", 20, -38)
@@ -188,9 +187,10 @@ local function BuildUI()
     end)
     ui.dropdown = dd
 
-    local cb = CreateFrame("CheckButton", nil, f, "UICheckButtonTemplate")
+    local cb = CreateFrame("CheckButton", "HealerStatsCompletedCheck", f, "UICheckButtonTemplate")
     cb:SetPoint("TOPLEFT", 16, -90)
-    cb.text:SetText("Completed")
+    local cbText = cb.Text or cb.text or _G[cb:GetName() .. "Text"]
+    if cbText then cbText:SetText("Completed") end
     cb:SetScript("OnClick", function(self) pending.completed = self:GetChecked() and true or false end)
     ui.completed = cb
 
@@ -207,11 +207,18 @@ local function BuildUI()
         local ch = GroupChannel()
         if ch then SendSummary(ch) else PrintSummary() end
     end)
+    ui.frame = f
     RefreshUI()
+end
+
+local function BuildUI()
+    local ok, err = pcall(BuildUI_)
+    if not ok then Print("UI error: " .. tostring(err)) end
 end
 
 local function ToggleUI()
     if not ui.frame then BuildUI() end
+    if not ui.frame then return end
     if ui.frame:IsShown() then ui.frame:Hide() else RefreshUI(); ui.frame:Show() end
 end
 
@@ -311,7 +318,7 @@ local frame = CreateFrame("Frame")
 frame:RegisterEvent("ADDON_LOADED")
 frame:SetScript("OnEvent", function(_, event, arg1)
     if event == "ADDON_LOADED" then
-        if arg1 ~= ADDON then return end
+        if not arg1 or arg1:lower() ~= ADDON:lower() then return end
         InitDB()
         for e in pairs(chatChannels) do frame:RegisterEvent(e) end
         frame:RegisterEvent("PLAYER_ENTERING_WORLD")
