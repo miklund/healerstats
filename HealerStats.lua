@@ -73,7 +73,7 @@ end
 ---------------------------------------------------------------------------
 local function RefreshUI()
     if not ui.frame then return end
-    UIDropDownMenu_SetText(ui.dropdown, pending.dungeon or "Select dungeon")
+    ui.dropdown:SetText(pending.dungeon or "Select dungeon")
     ui.completed:SetChecked(pending.completed)
     ui.wipes:SetText(tostring(pending.wipes))
     ui.deaths:SetText(tostring(pending.deaths))
@@ -170,21 +170,54 @@ local function BuildUI_()
     local label = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     label:SetPoint("TOPLEFT", 20, -38)
     label:SetText("Dungeon")
-    local dd = CreateFrame("Frame", "HealerStatsDropdown", f, "UIDropDownMenuTemplate")
-    dd:SetPoint("TOPLEFT", 60, -52)
-    UIDropDownMenu_SetWidth(dd, 190)
-    UIDropDownMenu_Initialize(dd, function()
-        for _, name in ipairs(DungeonList()) do
-            local info = UIDropDownMenu_CreateInfo()
-            info.text = name
-            info.checked = pending.dungeon == name
-            info.func = function()
-                pending.dungeon = name
-                RefreshUI()
+    -- Custom dropdown: UIDropDownMenuTemplate taints Blizzard's shared menu code.
+    local dd = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+    dd:SetSize(220, 24)
+    dd:SetPoint("TOPLEFT", 70, -34)
+    local list = CreateFrame("Frame", nil, f, "BackdropTemplate")
+    list:SetSize(220, 150)
+    list:SetPoint("TOPLEFT", dd, "BOTTOMLEFT", 0, 0)
+    list:SetFrameStrata("DIALOG")
+    list:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
+    list:SetBackdropColor(0, 0, 0, 0.95)
+    list:SetBackdropBorderColor(0.6, 0.6, 0.6, 1)
+    list:Hide()
+    local sf = CreateFrame("ScrollFrame", nil, list, "UIPanelScrollFrameTemplate")
+    sf:SetPoint("TOPLEFT", 4, -4)
+    sf:SetPoint("BOTTOMRIGHT", -26, 4)
+    local content = CreateFrame("Frame", nil, sf)
+    content:SetSize(190, 1)
+    sf:SetScrollChild(content)
+    local rows = {}
+    local function Populate()
+        local names = DungeonList()
+        for i, name in ipairs(names) do
+            local row = rows[i]
+            if not row then
+                row = CreateFrame("Button", nil, content)
+                row:SetSize(190, 20)
+                row:SetPoint("TOPLEFT", 0, -(i - 1) * 20)
+                row:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
+                row.text = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+                row.text:SetPoint("LEFT", 4, 0)
+                row:SetScript("OnClick", function(self)
+                    pending.dungeon = self.name
+                    list:Hide()
+                    RefreshUI()
+                end)
+                rows[i] = row
             end
-            UIDropDownMenu_AddButton(info)
+            row.name = name
+            row.text:SetText(name)
+            row:Show()
         end
+        for i = #names + 1, #rows do rows[i]:Hide() end
+        content:SetHeight(#names * 20)
+    end
+    dd:SetScript("OnClick", function()
+        if list:IsShown() then list:Hide() else Populate(); list:Show() end
     end)
+    f:HookScript("OnHide", function() list:Hide() end)
     ui.dropdown = dd
 
     local cb = CreateFrame("CheckButton", "HealerStatsCompletedCheck", f, "UICheckButtonTemplate")
