@@ -79,6 +79,7 @@ local function RefreshUI()
     ui.completed:SetChecked(pending.completed)
     ui.wipes:SetText(tostring(pending.wipes))
     ui.deaths:SetText(tostring(pending.deaths))
+    ui.stats:SetText(table.concat(SummaryLines(), "\n\n"))
 end
 
 local function ResetPending()
@@ -159,7 +160,7 @@ end
 
 local function BuildUI_()
     local f = HealerStatsFrame or CreateFrame("Frame", "HealerStatsFrame", UIParent, "BasicFrameTemplateWithInset")
-    f:SetSize(300, 250)
+    f:SetSize(300, 275)
     f:SetPoint("CENTER")
     f:SetMovable(true)
     f:EnableMouse(true)
@@ -169,14 +170,39 @@ local function BuildUI_()
     f.TitleText:SetText("Healer Stats")
     tinsert(UISpecialFrames, "HealerStatsFrame")
 
-    local label = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    local rec = CreateFrame("Frame", nil, f)
+    rec:SetPoint("TOPLEFT", 0, -52)
+    rec:SetPoint("BOTTOMRIGHT")
+    local statsPane = CreateFrame("Frame", nil, f)
+    statsPane:SetPoint("TOPLEFT", 0, -52)
+    statsPane:SetPoint("BOTTOMRIGHT")
+    statsPane:Hide()
+
+    local tabs = {}
+    local function SelectTab(i)
+        rec:SetShown(i == 1)
+        statsPane:SetShown(i == 2)
+        for n, t in ipairs(tabs) do t:SetEnabled(n ~= i) end
+        if i == 2 then RefreshUI() end
+    end
+    for i, name in ipairs({ "Record", "Stats" }) do
+        local t = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+        t:SetSize(80, 22)
+        t:SetPoint("TOPLEFT", 14 + (i - 1) * 84, -28)
+        t:SetText(name)
+        t:SetScript("OnClick", function() SelectTab(i) end)
+        tabs[i] = t
+    end
+    SelectTab(1)
+
+    local label = rec:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     label:SetPoint("TOPLEFT", 20, -38)
     label:SetText("Dungeon")
     -- Custom dropdown: UIDropDownMenuTemplate taints Blizzard's shared menu code.
-    local dd = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+    local dd = CreateFrame("Button", nil, rec, "UIPanelButtonTemplate")
     dd:SetSize(200, 24)
     dd:SetPoint("TOPLEFT", 86, -34)
-    local list = CreateFrame("Frame", nil, f, "BackdropTemplate")
+    local list = CreateFrame("Frame", nil, rec, "BackdropTemplate")
     list:SetSize(200, 150)
     list:SetPoint("TOPLEFT", dd, "BOTTOMLEFT", 0, 0)
     list:SetFrameStrata("DIALOG")
@@ -222,23 +248,29 @@ local function BuildUI_()
     f:HookScript("OnHide", function() list:Hide() end)
     ui.dropdown = dd
 
-    local cb = CreateFrame("CheckButton", "HealerStatsCompletedCheck", f, "UICheckButtonTemplate")
+    local cb = CreateFrame("CheckButton", "HealerStatsCompletedCheck", rec, "UICheckButtonTemplate")
     cb:SetPoint("TOPLEFT", 16, -90)
     local cbText = cb.Text or cb.text or _G[cb:GetName() .. "Text"]
     if cbText then cbText:SetText("Completed") end
     cb:SetScript("OnClick", function(self) pending.completed = self:GetChecked() and true or false end)
     ui.completed = cb
 
-    ui.wipes = NumberBox(f, "Wipes", -128, "wipes")
-    ui.deaths = NumberBox(f, "Deaths", -156, "deaths")
+    ui.wipes = NumberBox(rec, "Wipes", -128, "wipes")
+    ui.deaths = NumberBox(rec, "Deaths", -156, "deaths")
 
-    Button(f, "Save", 80, "BOTTOMLEFT", 16, 44, function()
+    Button(rec, "Save", 120, "BOTTOMLEFT", 16, 14, function()
         ui.wipes:ClearFocus(); ui.deaths:ClearFocus()
         SaveRun()
     end)
-    Button(f, "Reset", 80, "BOTTOM", 0, 44, ResetPending)
-    Button(f, "Copy stats", 80, "BOTTOMRIGHT", -16, 44, ShowCopyBox)
-    Button(f, "Post to group chat", 268, "BOTTOM", 0, 14, function()
+    Button(rec, "Reset", 120, "BOTTOMRIGHT", -16, 14, ResetPending)
+
+    ui.stats = statsPane:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    ui.stats:SetPoint("TOPLEFT", 20, -10)
+    ui.stats:SetWidth(260)
+    ui.stats:SetJustifyH("LEFT")
+    ui.stats:SetJustifyV("TOP")
+    Button(statsPane, "Copy stats", 120, "BOTTOMLEFT", 16, 14, ShowCopyBox)
+    Button(statsPane, "Post to chat", 120, "BOTTOMRIGHT", -16, 14, function()
         local ch = GroupChannel()
         if ch then SendSummary(ch) else PrintSummary() end
     end)
@@ -310,25 +342,39 @@ end
 -- COMBAT_LOG_EVENT_UNFILTERED is forbidden to addons on modern clients, so poll group state.
 local deadState = {}
 
-local function PollDeaths()
+local function DoPoll()
     if not InDungeon() then
         if next(deadState) then wipe(deadState) end
         return
     end
     for _, u in ipairs(GroupUnits()) do
         if UnitExists(u) then
-            local guid = UnitGUID(u)
-            local dead = UnitIsDeadOrGhost(u) and not UnitIsFeignDeath(u)
-            if guid then
-                if dead and not deadState[guid] then
-                    pending.deaths = pending.deaths + 1
-                    RefreshUI()
-                end
-                deadState[guid] = dead
+            -- Key by unit token: GUIDs can be unusable "secret" values in combat.
+            local dead = UnitIsDeadOrGhost(u) and not UnitIsFeignDeath(u) and true or false
+            if dead and not deadState[u] then
+                pending.deaths = pending.deaths + 1
+                RefreshUI()
             end
+            deadState[u] = dead
+        else
+            deadState[u] = nil
         end
     end
     CheckWipe()
+end
+
+local pollFailures = 0
+local function PollDeaths()
+    if pollFailures >= 3 then return end
+    local ok, err = pcall(DoPoll)
+    if ok then
+        pollFailures = 0
+    else
+        pollFailures = pollFailures + 1
+        if pollFailures >= 3 then
+            Print("Automatic tracking disabled after errors: " .. tostring(err))
+        end
+    end
 end
 
 ---------------------------------------------------------------------------

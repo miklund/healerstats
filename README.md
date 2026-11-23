@@ -10,7 +10,7 @@ HealerStats tracks every dungeon run you heal: whether it was completed, how man
 - The dungeon is picked up when you enter an instance; instances missing from the built-in list (`Dungeons.lua`) are added automatically.
 - Wipes and deaths are tracked during the run, and you can adjust them before saving.
 - Summary statistics: dungeons completed, perfect runs without deaths, runs without wipes, and total deaths.
-- Post your stats to party or raid chat, or copy them from a popup box.
+- View your stats on the Stats tab, post them to party or raid chat, or copy them from a popup box.
 
 ## Usage
 
