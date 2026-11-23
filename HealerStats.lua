@@ -38,21 +38,17 @@ local function Pct(n, d)
 end
 
 local function SummaryLines()
-    local total, completed, perfect, noWipe, deaths = #db.runs, 0, 0, 0, 0
+    local total, completed, noWipe, noDeath = #db.runs, 0, 0, 0
     for _, r in ipairs(db.runs) do
-        local d, w = r.deaths or 0, r.wipes or 0
-        deaths = deaths + d
-        if r.completed or r.success then
-            completed = completed + 1
-            if d == 0 and w == 0 then perfect = perfect + 1 end
-        end
-        if w == 0 then noWipe = noWipe + 1 end
+        if r.completed or r.success then completed = completed + 1 end
+        if (r.wipes or 0) == 0 then noWipe = noWipe + 1 end
+        if (r.deaths or 0) == 0 then noDeath = noDeath + 1 end
     end
     return {
-        string.format("%d dungeons completed out of %d runs (%d%%)", completed, total, Pct(completed, total)),
-        string.format("%d%% perfect runs without deaths", Pct(perfect, total)),
-        string.format("%d%% runs without wipes", Pct(noWipe, total)),
-        string.format("%d deaths on my watch (sorry!)", deaths),
+        string.format("Healer stats: Out of %d dungeons run", total),
+        string.format("%d%% were completed", Pct(completed, total)),
+        string.format("%d%% were without wipes", Pct(noWipe, total)),
+        string.format("%d%% were without any deaths", Pct(noDeath, total)),
     }
 end
 
@@ -79,7 +75,7 @@ local function RefreshUI()
     ui.completed:SetChecked(pending.completed)
     ui.wipes:SetText(tostring(pending.wipes))
     ui.deaths:SetText(tostring(pending.deaths))
-    ui.stats:SetText(table.concat(SummaryLines(), "\n\n"))
+    ui.stats:SetText(table.concat(SummaryLines(), "\n"))
 end
 
 local function ResetPending()
