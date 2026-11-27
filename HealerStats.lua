@@ -383,7 +383,9 @@ local chatChannels = {
 }
 
 local function OnChat(event, msg)
-    if not msg or msg:lower():match("^%s*(.-)%s*$") ~= "healerstats" then return end
+    -- Chat text is a "secret" value in instances/combat; addons cannot read it.
+    if not msg or (issecretvalue and issecretvalue(msg)) then return end
+    if msg:lower():match("^%s*(.-)%s*$") ~= "healerstats" then return end
     local now = GetTime()
     if now - lastReply < CHAT_COOLDOWN then return end
     lastReply = now
